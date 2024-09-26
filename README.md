@@ -10,14 +10,22 @@ conda activate DiT
 ```
 
 
-### Calibration Data
-
-
-
-### Quantization
+### Pre-trained DiT Checkpoints
 The pre-trained DiT checkpoints can be downloaded from the [original repository](https://github.com/facebookresearch/DiT?tab=readme-ov-file#sampling--).
 We then place these model weights, named `DiT-XL-2-256x256.pt` and `DiT-XL-2-512x512.pt`, under `pretrained_models/`.
 
+
+### Calibration Data
+```bash
+python get_calibration_set.py --model DiT-XL/2 --image-size 256 \
+--ckpt pretrained_models/DiT-XL-2-256x256.pt \
+--num-sampling-steps 50 \
+--outdir output/ --filename imagenet_DiT-256_sample4000_50steps_allst.pt \
+--cfg-scale 1.5 --seed 1
+```
+
+
+### Quantization
 - Example of quantizing DiT-XL/2 with 50 timesteps into W8A8 on ImageNet 256x256 generation.
 ```bash
 python quant_sample.py --model DiT-XL/2 --image-size 256 \
@@ -76,7 +84,8 @@ We use the [ADM’s TensorFlow evaluation suite](https://github.com/openai/guide
 ## TODO
 Please stay tuned!
 
-- [] Release core code of PTQ4DiT
+- [x] Release core code of PTQ4DiT
+- [x] Release the code for calibration data preparation
 - [] Release implementation of Re-Parameterization for fast inference
 
 
