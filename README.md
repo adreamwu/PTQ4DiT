@@ -16,6 +16,7 @@ We then place these model weights, named `DiT-XL-2-256x256.pt` and `DiT-XL-2-512
 
 
 ### Calibration Data
+Use the following command to generate calibration datasets.
 ```bash
 python get_calibration_set.py --model DiT-XL/2 --image-size 256 \
 --ckpt pretrained_models/DiT-XL-2-256x256.pt \
@@ -23,7 +24,7 @@ python get_calibration_set.py --model DiT-XL/2 --image-size 256 \
 --outdir output/ --filename imagenet_DiT-256_sample4000_50steps_allst.pt \
 --cfg-scale 1.5 --seed 1
 ```
-
+For other settings, please change `--image-size` and `--num-sampling-steps`.
 
 ### Quantization
 - Example of quantizing DiT-XL/2 with 50 timesteps into W8A8 on ImageNet 256x256 generation.
