@@ -131,20 +131,21 @@ class Mlp(nn.Module):
         self.scale_fc1 = None
         self.scale_fc2 = None
 
-    def forward(self, x):
-        if self.scale_fc1 is None:
-            w_scale = self.fc1.weight.abs().max(dim=0)[0]
-            x_scale = x.abs().max(1)[0]
-            tau_list = []
-            for i in range(x_scale.shape[0]):
-                tau_list.append(spearmanr(x_scale[i].cpu().numpy(), w_scale.cpu().numpy())[0])
-            tau_tensor = torch.tensor(tau_list).to(x.device)
-            tau_softmax = F.softmax(-tau_tensor, dim=0)
-            x_scale = (x_scale * tau_softmax.view(-1, 1)).sum(dim=0).type(torch.float32)
-            self.scale_fc1 = x_scale / (w_scale + 1e-8)
-            self.scale_fc1 = self.scale_fc1 ** (0.5)
-            self.fc1.weight = self.fc1.weight * self.scale_fc1
-        x = x / self.scale_fc1
+    def forward(self, x, calib=False):
+        if not calib:
+            if self.scale_fc1 is None:
+                w_scale = self.fc1.weight.abs().max(dim=0)[0]
+                x_scale = x.abs().max(1)[0]
+                tau_list = []
+                for i in range(x_scale.shape[0]):
+                    tau_list.append(spearmanr(x_scale[i].cpu().numpy(), w_scale.cpu().numpy())[0])
+                tau_tensor = torch.tensor(tau_list).to(x.device)
+                tau_softmax = F.softmax(-tau_tensor, dim=0)
+                x_scale = (x_scale * tau_softmax.view(-1, 1)).sum(dim=0).type(torch.float32)
+                self.scale_fc1 = x_scale / (w_scale + 1e-8)
+                self.scale_fc1 = self.scale_fc1 ** (0.5)
+                self.fc1.weight = self.fc1.weight * self.scale_fc1
+            x = x / self.scale_fc1
 
         x = self.fc1(x)
         x = self.act(x)
@@ -182,22 +183,23 @@ class Attention(nn.Module):
         self.scale_proj = None
         self.time_step = 0
 
-    def forward(self, x):
+    def forward(self, x, calib=False):
         B, N, C = x.shape  # [b=100, n=256, d=1152]
 
-        if self.scale_qkv is None:
-            w_scale = self.qkv.weight.abs().max(dim=0)[0]
-            x_scale = x.abs().max(1)[0]
-            tau_list = []
-            for i in range(x_scale.shape[0]):
-                tau_list.append(spearmanr(x_scale[i].cpu().numpy(), w_scale.cpu().numpy())[0])
-            tau_tensor = torch.tensor(tau_list).to(x.device)
-            tau_softmax = F.softmax(-tau_tensor, dim=0) 
-            x_scale = (x_scale * tau_softmax.view(-1, 1)).sum(dim=0).type(torch.float32)
-            self.scale_qkv = x_scale / (w_scale + 1e-8)
-            self.scale_qkv = self.scale_qkv ** (0.5)
-            self.qkv.weight = self.qkv.weight * self.scale_qkv
-        x = x / self.scale_qkv
+        if not calib:
+            if self.scale_qkv is None:
+                w_scale = self.qkv.weight.abs().max(dim=0)[0]
+                x_scale = x.abs().max(1)[0]
+                tau_list = []
+                for i in range(x_scale.shape[0]):
+                    tau_list.append(spearmanr(x_scale[i].cpu().numpy(), w_scale.cpu().numpy())[0])
+                tau_tensor = torch.tensor(tau_list).to(x.device)
+                tau_softmax = F.softmax(-tau_tensor, dim=0) 
+                x_scale = (x_scale * tau_softmax.view(-1, 1)).sum(dim=0).type(torch.float32)
+                self.scale_qkv = x_scale / (w_scale + 1e-8)
+                self.scale_qkv = self.scale_qkv ** (0.5)
+                self.qkv.weight = self.qkv.weight * self.scale_qkv
+            x = x / self.scale_qkv
 
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, self.head_dim).permute(2, 0, 3, 1, 4)
 
@@ -205,32 +207,33 @@ class Attention(nn.Module):
         q, k = self.q_norm(q), self.k_norm(k)
 
         q = q * self.scale
-        if self.use_act_quant:
+        if not calib and self.use_act_quant:
             attn = self.act_quantizer_q(q) @ self.act_quantizer_k(k).transpose(-2, -1)
         else:
             attn = q @ k.transpose(-2, -1)
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
-        if self.use_act_quant:
+        if not calib and self.use_act_quant:
             x = self.act_quantizer_w(attn) @ self.act_quantizer_v(v)
         else:
             x = attn @ v
 
         x = x.transpose(1, 2).reshape(B, N, C)  # [b, n, d]
 
-        if self.scale_proj is None:
-            w_scale = self.proj.weight.abs().max(dim=0)[0]
-            x_scale = x.abs().max(1)[0]
-            tau_list = []
-            for i in range(x_scale.shape[0]):
-                tau_list.append(spearmanr(x_scale[i].cpu().numpy(), w_scale.cpu().numpy())[0])
-            tau_tensor = torch.tensor(tau_list).to(x.device)
-            tau_softmax = F.softmax(-tau_tensor, dim=0) 
-            x_scale = (x_scale * tau_softmax.view(-1, 1)).sum(dim=0).type(torch.float32)
-            self.scale_proj = x_scale / (w_scale + 1e-8)
-            self.scale_proj = self.scale_proj ** (0.5)
-            self.proj.weight = self.proj.weight * self.scale_proj
-        x = x / self.scale_proj
+        if not calib:
+            if self.scale_proj is None:
+                w_scale = self.proj.weight.abs().max(dim=0)[0]
+                x_scale = x.abs().max(1)[0]
+                tau_list = []
+                for i in range(x_scale.shape[0]):
+                    tau_list.append(spearmanr(x_scale[i].cpu().numpy(), w_scale.cpu().numpy())[0])
+                tau_tensor = torch.tensor(tau_list).to(x.device)
+                tau_softmax = F.softmax(-tau_tensor, dim=0) 
+                x_scale = (x_scale * tau_softmax.view(-1, 1)).sum(dim=0).type(torch.float32)
+                self.scale_proj = x_scale / (w_scale + 1e-8)
+                self.scale_proj = self.scale_proj ** (0.5)
+                self.proj.weight = self.proj.weight * self.scale_proj
+            x = x / self.scale_proj
 
         x = self.proj(x)
         x = self.proj_drop(x)
@@ -254,10 +257,10 @@ class DiTBlock(nn.Module):
             nn.Linear(hidden_size, 6 * hidden_size, bias=True)
         )
 
-    def forward(self, x, c):
+    def forward(self, x, c, calib=False):
         shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).chunk(6, dim=1) # Each of size [b=16, d=1152]
-        x = x + gate_msa.unsqueeze(1) * self.attn(modulate(self.norm1(x), shift_msa, scale_msa))  # [b=16, n=256, d=1152]
-        x = x + gate_mlp.unsqueeze(1) * self.mlp(modulate(self.norm2(x), shift_mlp, scale_mlp))
+        x = x + gate_msa.unsqueeze(1) * self.attn(modulate(self.norm1(x), shift_msa, scale_msa), calib)  # [b=16, n=256, d=1152]
+        x = x + gate_mlp.unsqueeze(1) * self.mlp(modulate(self.norm2(x), shift_mlp, scale_mlp), calib)
         return x
 
 
@@ -369,7 +372,7 @@ class DiT(nn.Module):
         imgs = x.reshape(shape=(x.shape[0], c, h * p, h * p))
         return imgs
 
-    def forward(self, x, t, y):
+    def forward(self, x, t, y, calib=False):
         """
         Forward pass of DiT.
         x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
@@ -381,19 +384,19 @@ class DiT(nn.Module):
         y = self.y_embedder(y, self.training)    # (N, D)
         c = t + y                                # (N, D)
         for block in self.blocks:
-            x = block(x, c)                      # (N, T, D)
+            x = block(x, c, calib)                      # (N, T, D)
         x = self.final_layer(x, c)                # (N, T, patch_size ** 2 * out_channels)
         x = self.unpatchify(x)                   # (N, out_channels, H, W)
         return x
 
-    def forward_with_cfg(self, x, t, y, cfg_scale):
+    def forward_with_cfg(self, x, t, y, cfg_scale, calib=False):
         """
         Forward pass of DiT, but also batches the unconditional forward pass for classifier-free guidance.
         """
         # https://github.com/openai/glide-text2im/blob/main/notebooks/text2im.ipynb
         half = x[: len(x) // 2]
         combined = torch.cat([half, half], dim=0)
-        model_out = self.forward(combined, t, y)
+        model_out = self.forward(combined, t, y, calib=calib)
         # For exact reproducibility reasons, we apply classifier-free guidance on only
         # three channels by default. The standard approach to cfg applies it to all channels.
         # This can be done by uncommenting the following line and commenting-out the line following that.

@@ -40,7 +40,7 @@ def main(args):
     state_dict = find_model(ckpt_path)
     model.load_state_dict(state_dict)
     model.eval()  # important!
-    diffusion = create_diffusion(str(args.num_sampling_steps))
+    diffusion = create_diffusion(str(args.num_sampling_steps), calib=True)
     vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
 
     # Labels to condition the model with (feel free to change):
@@ -58,7 +58,7 @@ def main(args):
         z = torch.cat([z, z], 0)
         y_null = torch.tensor([1000] * n, device=device)
         y = torch.cat([y, y_null], 0)
-        model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
+        model_kwargs = dict(y=y, cfg_scale=args.cfg_scale, calib=True)
 
         # Sample images:
         samples, intermediates = diffusion.p_sample_loop(
@@ -82,7 +82,7 @@ def main(args):
 
     for k in logs.keys():
         print(logs[k].shape)
-    torch.save(logs, "imagenet_DiT-512_sample4000_250steps_allst.pt")
+    torch.save(logs, f"{args.outdir}/{args.filename}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -90,11 +90,12 @@ if __name__ == "__main__":
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="mse")
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
     parser.add_argument("--num-classes", type=int, default=1000)
-    parser.add_argument("--cfg-scale", type=float, default=4.0)
+    parser.add_argument("--cfg-scale", type=float, default=1.5)
     parser.add_argument("--num-sampling-steps", type=int, default=250)
-    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     parser.add_argument("--outdir", type=str, default="output/")
+    parser.add_argument("--filename", type=str, default="imagenet_DiT-512_sample4000_250steps_allst.pt")
     args = parser.parse_args()
     main(args)

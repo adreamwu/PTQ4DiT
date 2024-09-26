@@ -3,8 +3,11 @@
 #     ADM:   https://github.com/openai/guided-diffusion/blob/main/guided_diffusion
 #     IDDPM: https://github.com/openai/improved-diffusion/blob/main/improved_diffusion/gaussian_diffusion.py
 
-from . import gaussian_diffusion as gd
-from .respace import SpacedDiffusion, space_timesteps
+from . import gaussian_diffusion as gd_original
+from . import gaussian_diffusion_calib as gd_calib
+from .respace import space_timesteps
+from .respace import SpacedDiffusion as SpacedDiffusion_original
+from .respace_calib import SpacedDiffusion as SpacedDiffusion_calib
 
 
 def create_diffusion(
@@ -15,8 +18,15 @@ def create_diffusion(
     predict_xstart=False,
     learn_sigma=True,
     rescale_learned_sigmas=False,
-    diffusion_steps=1000
+    diffusion_steps=1000,
+    calib=False
 ):
+    if calib:
+        gd = gd_calib
+        SpacedDiffusion = SpacedDiffusion_calib
+    else:
+        gd = gd_original
+        SpacedDiffusion = SpacedDiffusion_original
     betas = gd.get_named_beta_schedule(noise_schedule, diffusion_steps)
     if use_kl:
         loss_type = gd.LossType.RESCALED_KL
