@@ -26,11 +26,18 @@ python quant_sample.py --model DiT-XL/2 --image-size 256 \
 ```
 
 
-
-
-
 ### Evaluation
-
+```bash
+python quant_sample.py --model DiT-XL/2 --image-size 256 \
+--ckpt pretrained_models/DiT-XL-2-256x256.pt \
+--num-sampling-steps 50 --quant_act \
+--weight_bit 8 --act_bit 8 --cali_st 25 --cali_n 64 --cali_batch_size 32 --sm_abit 8 \
+--cali_data_path imagenet_DiT-256_sample4000_50steps_allst.pt --outdir output/ \
+--cfg-scale 1.5 --seed 1 \
+--resume --cali_ckpt output/256_88_50/ckpt.pth \
+--ptq \
+--inference --n_c 10
+```
 
 
 
