@@ -94,10 +94,10 @@ Please stay tuned!
 If you find PTQ4DiT useful or relevant to your project and research, please kindly cite our paper:)
 
 ```bibtex
-@article{wu2024ptq4dit,
+@inproceedings{wu2024ptq4dit,
   title={PTQ4DiT: Post-training Quantization for Diffusion Transformers},
   author={Wu, Junyi and Wang, Haoxuan and Shang, Yuzhang and Shah, Mubarak and Yan, Yan},
-  journal={arXiv preprint arXiv:2405.16005},
+  booktitle={NeurIPS},
   year={2024}
 }
 ```
