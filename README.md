@@ -18,6 +18,8 @@ We then place these model weights, named `DiT-XL-2-256x256.pt` and `DiT-XL-2-512
 ### Calibration Data
 Use the following command to generate calibration datasets.
 ```bash
+mkdir output
+
 python get_calibration_set.py --model DiT-XL/2 --image-size 256 \
 --ckpt pretrained_models/DiT-XL-2-256x256.pt \
 --num-sampling-steps 50 \
