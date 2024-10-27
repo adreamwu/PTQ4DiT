@@ -151,39 +151,40 @@ def main(args):
                         else:
                             m.zero_point = nn.Parameter(m.zero_point.float())
 
-        # Kwargs for calibration
-        cali_data = (cali_xs, cali_ts, cali_ys, args.cfg_scale)
-        kwargs = dict(cali_data=cali_data, batch_size=args.cali_batch_size, 
-                    iters=args.cali_iters, weight=0.01, asym=True, b_range=(20, 2),
-                    warmup=0.2, act_quant=True, opt_mode=args.opt_mode, outpath=outpath)
+        if args.recon:
+            # Kwargs for calibration
+            cali_data = (cali_xs, cali_ts, cali_ys, args.cfg_scale)
+            kwargs = dict(cali_data=cali_data, batch_size=args.cali_batch_size, 
+                        iters=args.cali_iters, weight=0.01, asym=True, b_range=(20, 2),
+                        warmup=0.2, act_quant=True, opt_mode=args.opt_mode, outpath=outpath)
 
-        def recon_model(model):
-            for name, module in model.named_children():
-                if isinstance(module, QuantModule):
-                    logger.info('Reconstruction for layer {}'.format(name))
-                    layer_reconstruction(qnn, module, **kwargs)
-                elif isinstance(module, QuantDiTBlock) or isinstance(module, QuantFinalLayer):
-                    logger.info('Reconstruction for block {}'.format(name))
-                    block_reconstruction(qnn, module, **kwargs)
-                else:
-                    recon_model(module)
-        torch.set_grad_enabled(True)
-        recon_model(qnn)
-        
-        logger.info("Saving calibrated quantized UNet model")
-        for m in qnn.model.modules():
-            if isinstance(m, AdaRoundQuantizer):
-                m.zero_point = nn.Parameter(m.zero_point)
-                m.delta = nn.Parameter(m.delta)
-            elif isinstance(m, UniformAffineQuantizer):
-                m.delta = nn.Parameter(m.delta)
-                if m.zero_point is not None:
-                    if not torch.is_tensor(m.zero_point):
-                        m.zero_point = nn.Parameter(torch.tensor(float(m.zero_point)))
+            def recon_model(model):
+                for name, module in model.named_children():
+                    if isinstance(module, QuantModule):
+                        logger.info('Reconstruction for layer {}'.format(name))
+                        layer_reconstruction(qnn, module, **kwargs)
+                    elif isinstance(module, QuantDiTBlock) or isinstance(module, QuantFinalLayer):
+                        logger.info('Reconstruction for block {}'.format(name))
+                        block_reconstruction(qnn, module, **kwargs)
                     else:
-                        m.zero_point = nn.Parameter(m.zero_point.float())
-        torch.save(qnn.state_dict(), os.path.join(outpath, "ckpt.pth"))
-        logger.info('Calibrated model saved to {}'.format(os.path.join(outpath, "ckpt.pth")))
+                        recon_model(module)
+            torch.set_grad_enabled(True)
+            recon_model(qnn)
+            
+            logger.info("Saving calibrated quantized UNet model")
+            for m in qnn.model.modules():
+                if isinstance(m, AdaRoundQuantizer):
+                    m.zero_point = nn.Parameter(m.zero_point)
+                    m.delta = nn.Parameter(m.delta)
+                elif isinstance(m, UniformAffineQuantizer):
+                    m.delta = nn.Parameter(m.delta)
+                    if m.zero_point is not None:
+                        if not torch.is_tensor(m.zero_point):
+                            m.zero_point = nn.Parameter(torch.tensor(float(m.zero_point)))
+                        else:
+                            m.zero_point = nn.Parameter(m.zero_point.float())
+            torch.save(qnn.state_dict(), os.path.join(outpath, "ckpt.pth"))
+            logger.info('Calibrated model saved to {}'.format(os.path.join(outpath, "ckpt.pth")))
         qnn.set_quant_state(True, True)
 
     if args.sample:
