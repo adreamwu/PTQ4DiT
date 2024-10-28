@@ -16,7 +16,7 @@ def layer_reconstruction(model: QuantModel, layer: QuantModule, cali_data: torch
                          batch_size: int = 32, iters: int = 20000, weight: float = 0.001, opt_mode: str = 'mse',
                          asym: bool = False, include_act_func: bool = True, b_range: tuple = (20, 2),
                          warmup: float = 0.0, act_quant: bool = False, lr: float = 4e-5, p: float = 2.0,
-                         is_sm: bool = False, outpath: str = None):
+                         outpath: str = None):
     """
     Block reconstruction to optimize the output from each layer.
 
@@ -36,7 +36,6 @@ def layer_reconstruction(model: QuantModel, layer: QuantModule, cali_data: torch
     :param p: L_p norm minimization
     :param multi_gpu: use multi-GPU or not, if enabled, we should sync the gradients
     :param cond: conditional generation or not
-    :param is_sm: avoid OOM when caching n^2 attention matrix when n is large
     """
     # Set up quantization state:
     model.set_quant_state(False, False)
@@ -82,7 +81,7 @@ def layer_reconstruction(model: QuantModel, layer: QuantModule, cali_data: torch
     for k in range(num_split):
         cali_data_t = (cali_data[0][k*b_size:(k+1)*b_size], cali_data[1][k*b_size:(k+1)*b_size], cali_data[2][k*b_size:(k+1)*b_size], cali_data[3])
         cached_inps, cached_outs = save_inp_oup_data(
-            model, layer, cali_data_t, asym, act_quant, batch_size=4, keep_gpu=False, is_sm=is_sm) 
+            model, layer, cali_data_t, asym, act_quant, batch_size=4, keep_gpu=False) 
         torch.save(cached_inps, os.path.join(cached_path, f'cached_inps_t{k}.pt'))
         torch.save(cached_outs, os.path.join(cached_path, f'cached_outs_t{k}.pt'))
     device = 'cuda'
