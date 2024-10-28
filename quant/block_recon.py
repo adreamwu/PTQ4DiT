@@ -16,7 +16,7 @@ def block_reconstruction(model: QuantModel, block: BaseQuantBlock, cali_data: to
                          batch_size: int = 32, iters: int = 20000, weight: float = 0.01, opt_mode: str = 'mse',
                          asym: bool = False, include_act_func: bool = True, b_range: tuple = (20, 2),
                          warmup: float = 0.0, act_quant: bool = False, lr: float = 4e-5, p: float = 2.0,
-                         is_sm: bool = False, outpath: str = None):
+                         outpath: str = None):
     """
     Block reconstruction to optimize the output from each block.
 
@@ -36,7 +36,6 @@ def block_reconstruction(model: QuantModel, block: BaseQuantBlock, cali_data: to
     :param p: L_p norm minimization
     :param multi_gpu: use multi-GPU or not, if enabled, we should sync the gradients
     :param cond: conditional generation or not
-    :param is_sm: avoid OOM when caching n^2 attention matrix when n is large
     """
     # Set up quantization state:
     model.set_quant_state(False, False)
@@ -110,7 +109,7 @@ def block_reconstruction(model: QuantModel, block: BaseQuantBlock, cali_data: to
     for k in range(num_split):
         cali_data_t = (cali_data[0][k*b_size:(k+1)*b_size], cali_data[1][k*b_size:(k+1)*b_size], cali_data[2][k*b_size:(k+1)*b_size], cali_data[3])
         cached_inps, cached_outs = save_inp_oup_data(
-            model, block, cali_data_t, asym, act_quant, batch_size=4, keep_gpu=False, is_sm=is_sm) 
+            model, block, cali_data_t, asym, act_quant, batch_size=4, keep_gpu=False) 
         cached_path = os.path.join(outpath, 'tmp_cached/')
         if not os.path.exists(cached_path):
             os.makedirs(cached_path)
