@@ -18,12 +18,12 @@ We then place these model weights, named `DiT-XL-2-256x256.pt` and `DiT-XL-2-512
 ### Calibration Data
 Use the following command to generate calibration datasets.
 ```bash
-mkdir output
+mkdir calib
 
 python get_calibration_set.py --model DiT-XL/2 --image-size 256 \
 --ckpt pretrained_models/DiT-XL-2-256x256.pt \
 --num-sampling-steps 50 \
---outdir output/ --filename imagenet_DiT-256_sample4000_50steps_allst.pt \
+--outdir calib/ --filename imagenet_DiT-256_sample4000_50steps_allst.pt \
 --cfg-scale 1.5 --seed 1
 ```
 For other settings, please change `--image-size` and `--num-sampling-steps`.
@@ -35,7 +35,7 @@ python quant_sample.py --model DiT-XL/2 --image-size 256 \
 --ckpt pretrained_models/DiT-XL-2-256x256.pt \
 --num-sampling-steps 50 \
 --weight_bit 8 --act_bit 8 --cali_st 25 --cali_n 64 --cali_batch_size 32 --sm_abit 8 \
---cali_data_path imagenet_DiT-256_sample4000_50steps_allst.pt --outdir output/ \
+--cali_data_path calib/imagenet_DiT-256_sample4000_50steps_allst.pt --outdir output/ \
 --cfg-scale 1.5 --seed 1 --ptq --recon --sample
 ```
 To specify other bit-widths, please change `--weight_bit` and `--act_bit`.
@@ -47,7 +47,7 @@ python quant_sample.py --model DiT-XL/2 --image-size 512 \
 --ckpt pretrained_models/DiT-XL-2-512x512.pt \
 --num-sampling-steps 50 \
 --weight_bit 4 --act_bit 8 --cali_st 10 --cali_n 128 --cali_batch_size 16 --sm_abit 8 \
---cali_data_path imagenet_DiT-512_sample4000_50steps_allst.pt --outdir output/ \
+--cali_data_path calib/imagenet_DiT-512_sample4000_50steps_allst.pt --outdir output/ \
 --cfg-scale 1.5 --seed 1 --ptq --recon --sample
 ```
 
@@ -59,7 +59,7 @@ python quant_sample.py --model DiT-XL/2 --image-size 256 \
 --ckpt pretrained_models/DiT-XL-2-256x256.pt \
 --num-sampling-steps 50 \
 --weight_bit 8 --act_bit 8 --cali_st 25 --cali_n 64 --cali_batch_size 32 --sm_abit 8 \
---cali_data_path imagenet_DiT-256_sample4000_50steps_allst.pt --outdir output/ \
+--cali_data_path calib/imagenet_DiT-256_sample4000_50steps_allst.pt --outdir output/ \
 --cfg-scale 1.5 --seed 1 \
 --resume --cali_ckpt output/256_88_50/ckpt.pth \
 --ptq \
@@ -72,7 +72,7 @@ python quant_sample.py --model DiT-XL/2 --image-size 512 \
 --ckpt pretrained_models/DiT-XL-2-512x512.pt \
 --num-sampling-steps 50 \
 --weight_bit 4 --act_bit 8 --cali_st 10 --cali_n 128 --cali_batch_size 16 --sm_abit 8 \
---cali_data_path imagenet_DiT-512_sample4000_50steps_allst.pt --outdir output/ \
+--cali_data_path calib/imagenet_DiT-512_sample4000_50steps_allst.pt --outdir output/ \
 --cfg-scale 1.5 --seed 1 \
 --resume --cali_ckpt output/512_48_50/ckpt.pth \
 --ptq \
