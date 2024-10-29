@@ -187,33 +187,6 @@ def main(args):
             logger.info('Calibrated model saved to {}'.format(os.path.join(outpath, "ckpt.pth")))
         qnn.set_quant_state(True, True)
 
-    if args.sample:
-        # Labels to condition the model with (feel free to change):
-        class_labels = [207, 360, 387, 974, 88, 979, 417, 279]
-
-        # Create sampling noise:
-        n = len(class_labels)
-        z = torch.randn(n, 4, latent_size, latent_size, device=device)
-        y = torch.tensor(class_labels, device=device)
-
-        # Setup classifier-free guidance:
-        z = torch.cat([z, z], 0)
-        y_null = torch.tensor([1000] * n, device=device)
-        y = torch.cat([y, y_null], 0)
-        model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
-
-        # Sample images:
-        samples, _ = diffusion.p_sample_loop(
-            qnn.forward, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=True, device=device
-        )
-        samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
-        samples = vae.decode(samples / 0.18215).sample
-
-        # Save and display images:
-        torch.cuda.empty_cache()
-        save_image(samples, os.path.join(outpath, "sample.png"), nrow=4, normalize=True, value_range=(-1, 1))
-        logger.info(f"Saved samples to {outpath}/sample.png")
-
     if args.inference:
         # Labels to condition the model with (feel free to change):
         all_labels = np.arange(1000)
@@ -245,7 +218,7 @@ def main(args):
             samples, _ = diffusion.p_sample_loop(
                 qnn.forward, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=True, device=device
             )
-            samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
+            samples = samples.chunk(2, dim=0)  # Remove null class samples
             samples = vae.decode(samples / 0.18215).sample
 
             # Save and display images:
@@ -284,7 +257,6 @@ if __name__ == "__main__":
     parser.add_argument("--sm_abit",type=int, default=8, help="attn softmax activation bit")
     parser.add_argument("--recon", action="store_true", help="reconstruct the model")
     parser.add_argument("--opt-mode", type=str, default="mse", help="optimization loss for reconstruction")
-    parser.add_argument("--sample", action="store_true", help="sample images")
     parser.add_argument("--inference", action="store_true", help="inference for all classes")
     parser.add_argument("--n_c", type=int, default=10, help="number of samples for each class for inference")
     parser.add_argument("--c_begin", type=int, default=0, help="begining class index for inference")
