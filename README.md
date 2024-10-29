@@ -36,7 +36,7 @@ python quant_sample.py --model DiT-XL/2 --image-size 256 \
 --num-sampling-steps 50 \
 --weight_bit 8 --act_bit 8 --cali_st 25 --cali_n 64 --cali_batch_size 32 --sm_abit 8 \
 --cali_data_path calib/imagenet_DiT-256_sample4000_50steps_allst.pt --outdir output/ \
---cfg-scale 1.5 --seed 1 --ptq --recon --sample
+--cfg-scale 1.5 --seed 1 --ptq --recon
 ```
 To specify other bit-widths, please change `--weight_bit` and `--act_bit`.
 For different numbers of timesteps, please change `--num-sampling-steps` and use the corresponding calibration data by changing `--cali_data_path`.
@@ -48,7 +48,7 @@ python quant_sample.py --model DiT-XL/2 --image-size 512 \
 --num-sampling-steps 50 \
 --weight_bit 4 --act_bit 8 --cali_st 10 --cali_n 128 --cali_batch_size 16 --sm_abit 8 \
 --cali_data_path calib/imagenet_DiT-512_sample4000_50steps_allst.pt --outdir output/ \
---cfg-scale 1.5 --seed 1 --ptq --recon --sample
+--cfg-scale 1.5 --seed 1 --ptq --recon
 ```
 
 
