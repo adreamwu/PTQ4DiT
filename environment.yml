@@ -13,3 +13,4 @@ dependencies:
     - diffusers
     - accelerate
     - einops
+    - diffusers
