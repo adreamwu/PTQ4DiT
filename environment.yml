@@ -10,7 +10,7 @@ dependencies:
   - pip
   - pip:
     - timm
-    - diffusers
+    - numpy==1.26.4
     - accelerate
     - einops
     - diffusers
